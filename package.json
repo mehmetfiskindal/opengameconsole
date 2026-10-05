@@ -26,6 +26,7 @@
     "entry": "src/index.tsx",
     "compilerPlugins": ["scripts/nes-host-plugin.mjs"],
     "sailfish": {
+      "nativeSources": ["native/nes_host.cpp", "native/nes_host.h", "native/pad_demo_rom.c"],
       "staticLibraries": [
         {
           "name": "fceumm",

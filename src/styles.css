@@ -19,23 +19,47 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: 12px;
+  padding: 16px;
   background-color: #101418;
 }
 
+.shell-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .title { color: #2dd4bf; font-size: 28px; }
-.game-name { font-size: 20px; }
+.hint { color: #94a3b8; font-size: 16px; }
 .message { color: #f87171; font-size: 18px; }
 
-.play {
-  width: 200px;
-  height: 64px;
+.refresh {
+  width: 104px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #334155;
+  color: #f8fafc;
+  font-size: 18px;
+}
+
+.rom-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.rom {
+  height: 56px;
+  flex-shrink: 0;
   border-radius: 12px;
-  background-color: #2dd4bf;
-  color: #101418;
-  font-size: 24px;
+  background-color: #1f2a33;
+  color: #f8fafc;
+  font-size: 20px;
 }
 
 .game { display: flex; flex-direction: column; flex: 1; }

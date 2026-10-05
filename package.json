@@ -25,6 +25,45 @@
     "name": "Opengameconsole",
     "entry": "src/index.tsx",
     "compilerPlugins": ["scripts/nes-host-plugin.mjs"],
+    "sailfish": {
+      "staticLibraries": [
+        {
+          "name": "fceumm",
+          "root": "native/fceumm",
+          "sources": [
+            "native/fceumm/src",
+            "native/fceumm/src/boards",
+            "native/fceumm/src/input",
+            "native/fceumm/src/drivers/libretro/libretro.c",
+            "native/fceumm/src/drivers/libretro/libretro_dipswitch.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/streams/memory_stream.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/compat/compat_posix_string.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/compat/compat_snprintf.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/compat/compat_strcasestr.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/compat/compat_strl.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/compat/fopen_utf8.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/encodings/encoding_utf.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/file/file_path.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/file/file_path_io.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/streams/file_stream.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/streams/file_stream_transforms.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/string/stdstring.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/time/rtime.c",
+            "native/fceumm/src/drivers/libretro/libretro-common/vfs/vfs_implementation.c"
+          ],
+          "includePaths": [
+            "native/fceumm/src/drivers/libretro",
+            "native/fceumm/src",
+            "native/fceumm/src/input",
+            "native/fceumm/src/boards"
+          ],
+          "publicIncludePaths": [
+            "native/fceumm/src/drivers/libretro/libretro-common/include"
+          ],
+          "defines": ["__LIBRETRO__", "PATH_MAX=1024", "FCEU_VERSION_NUMERIC=9900", "FRONTEND_SUPPORTS_RGB565"]
+        }
+      ]
+    },
     "targets": {
       "web": true,
       "esp32": false,

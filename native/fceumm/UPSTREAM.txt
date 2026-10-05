@@ -1,0 +1,7 @@
+https://github.com/libretro/libretro-fceumm
+7a542dab1e87679921962a9f056186eca425c0c2
+
+Copied: src/ unchanged, Copying as COPYING.
+Build: gea.sailfish.staticLibraries "fceumm" in package.json, matching
+Makefile.common with HAVE_NTSC and HAVE_HDPACK off and STATIC_LINKING unset.
+License: GPL-2.0. The opengameconsole RPM that links it is GPL-2.0.

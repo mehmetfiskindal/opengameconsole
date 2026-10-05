@@ -1,4 +1,5 @@
 #include "nes_host.h"
+#include "rom_library.h"
 
 #include "libretro.h"
 
@@ -9,7 +10,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <ctime>
+#include <string>
 #include <vector>
 
 extern "C" const unsigned char opengameconsole_pad_demo_rom[];
@@ -25,6 +28,7 @@ constexpr unsigned kMaxFrameHeight = 240;
 constexpr int kScreenBandPercent = 62;
 constexpr int kMaxFramesPerLoop = 2;
 constexpr std::uint32_t kAudioQueueLimitMs = 120;
+constexpr std::int64_t kSaveIntervalNs = 30LL * 1000000000LL;
 
 struct ButtonName {
 	const char *name;
@@ -55,6 +59,21 @@ std::vector<std::uint16_t> g_scaled;
 SDL_AudioDeviceID g_audio = 0;
 std::uint32_t g_audioBytesPerSecond = 0;
 retro_game_info_ext g_gameInfoExt{};
+
+struct LibraryEntry {
+	std::string name;
+	std::string stem;
+	std::string path;
+};
+
+std::vector<LibraryEntry> g_library;
+std::vector<unsigned char> g_rom;
+std::string g_romPath;
+std::string g_romDir;
+std::string g_romStem;
+std::string g_savePath;
+std::vector<unsigned char> g_savedSram;
+std::int64_t g_lastSaveCheckNs = 0;
 
 std::int64_t nowNs()
 {
@@ -189,8 +208,43 @@ bool drawFrame()
 	return true;
 }
 
+std::string homeDirectory()
+{
+	const char *home = std::getenv("HOME");
+	return home ? home : "";
+}
+
+void loadSave()
+{
+	g_savePath.clear();
+	g_savedSram.clear();
+	const std::size_t size = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+	auto *data = static_cast<unsigned char *>(retro_get_memory_data(RETRO_MEMORY_SAVE_RAM));
+	const std::string dir = opengameconsole::roms::saveDirectory(homeDirectory());
+	if (size == 0 || !data || dir.empty()) return;
+	g_savePath = dir + "/" + opengameconsole::roms::saveFileName(g_romStem, g_rom.data(), g_rom.size());
+	if (opengameconsole::roms::readSave(g_savePath, size, g_savedSram)) std::memcpy(data, g_savedSram.data(), size);
+	else g_savedSram.assign(data, data + size);
+}
+
+// Writes SRAM only when it differs from what was last read or written.
+void flushSave()
+{
+	if (g_savePath.empty()) return;
+	const std::size_t size = retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+	const auto *data = static_cast<const unsigned char *>(retro_get_memory_data(RETRO_MEMORY_SAVE_RAM));
+	if (size == 0 || !data) return;
+	if (g_savedSram.size() == size && std::memcmp(g_savedSram.data(), data, size) == 0) return;
+	if (!opengameconsole::roms::writeSave(g_savePath, data, size)) {
+		std::fprintf(stderr, "[nes] could not write %s\n", g_savePath.c_str());
+		return;
+	}
+	g_savedSram.assign(data, data + size);
+}
+
 void unloadCore()
 {
+	flushSave();
 	retro_unload_game();
 	retro_deinit();
 	closeAudio();
@@ -199,28 +253,61 @@ void unloadCore()
 	g_frameWidth = 0;
 	g_frameHeight = 0;
 	g_frameChanged = false;
+	g_savePath.clear();
+	g_savedSram.clear();
+	g_rom.clear();
 }
 
 }  // namespace
 
 namespace opengameconsole::nes {
 
-double play()
+double refreshRoms()
+{
+	g_library.clear();
+	g_library.push_back({"Pad Demo", "pad-demo", ""});
+	for (const opengameconsole::roms::RomFile &file : opengameconsole::roms::scan(homeDirectory()))
+		g_library.push_back({file.name, file.stem, file.path});
+	return static_cast<double>(g_library.size());
+}
+
+std::string romName(double index)
+{
+	if (!(index >= 0) || index >= static_cast<double>(g_library.size())) return "";
+	return g_library[static_cast<std::size_t>(index)].name;
+}
+
+double play(double index)
 {
 	if (g_running) unloadCore();
-	const unsigned char *rom = opengameconsole_pad_demo_rom;
-	const std::size_t size = opengameconsole_pad_demo_rom_size;
-	if (!romLooksValid(rom, size)) {
-		std::fprintf(stderr, "[nes] embedded ROM is not an iNES image\n");
+	if (g_library.empty()) refreshRoms();
+	if (!(index >= 0) || index >= static_cast<double>(g_library.size())) return 3;
+	const LibraryEntry entry = g_library[static_cast<std::size_t>(index)];
+	if (entry.path.empty()) {
+		g_rom.assign(opengameconsole_pad_demo_rom, opengameconsole_pad_demo_rom + opengameconsole_pad_demo_rom_size);
+		g_romPath = "pad-demo.nes";
+		g_romDir = "";
+	} else {
+		if (!opengameconsole::roms::readRomFile(entry.path, g_rom)) {
+			std::fprintf(stderr, "[nes] cannot read %s\n", entry.path.c_str());
+			return 3;
+		}
+		g_romPath = entry.path;
+		g_romDir = entry.path.substr(0, entry.path.rfind('/'));
+	}
+	g_romStem = entry.stem;
+	if (!romLooksValid(g_rom.data(), g_rom.size())) {
+		std::fprintf(stderr, "[nes] %s is not an iNES image\n", g_romPath.c_str());
+		g_rom.clear();
 		return 1;
 	}
 	g_gameInfoExt = {};
-	g_gameInfoExt.full_path = "pad-demo.nes";
-	g_gameInfoExt.dir = "";
-	g_gameInfoExt.name = "pad-demo";
+	g_gameInfoExt.full_path = g_romPath.c_str();
+	g_gameInfoExt.dir = g_romDir.c_str();
+	g_gameInfoExt.name = g_romStem.c_str();
 	g_gameInfoExt.ext = "nes";
-	g_gameInfoExt.data = rom;
-	g_gameInfoExt.size = size;
+	g_gameInfoExt.data = g_rom.data();
+	g_gameInfoExt.size = g_rom.size();
 	g_gameInfoExt.file_in_archive = false;
 	g_gameInfoExt.persistent_data = true;
 
@@ -232,15 +319,17 @@ double play()
 	retro_set_input_state(inputState);
 	retro_init();
 	retro_game_info info{};
-	info.path = "pad-demo.nes";
-	info.data = rom;
-	info.size = size;
+	info.path = g_romPath.c_str();
+	info.data = g_rom.data();
+	info.size = g_rom.size();
 	if (!retro_load_game(&info)) {
-		std::fprintf(stderr, "[nes] core refused the ROM\n");
+		std::fprintf(stderr, "[nes] core refused %s\n", g_romPath.c_str());
 		retro_deinit();
+		g_rom.clear();
 		return 2;
 	}
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+	loadSave();
 	retro_system_av_info av{};
 	retro_get_system_av_info(&av);
 	g_fps = av.timing.fps > 1.0 ? av.timing.fps : 60.0;
@@ -251,6 +340,7 @@ double play()
 	g_frameChanged = false;
 	g_framesRun = 0;
 	g_startNs = nowNs();
+	g_lastSaveCheckNs = g_startNs;
 	g_running = true;
 	return 0;
 }
@@ -279,12 +369,17 @@ void stop()
 extern "C" int gea_app_before_refresh(void)
 {
 	if (!g_running) return 0;
-	const auto due = static_cast<std::int64_t>(static_cast<double>(nowNs() - g_startNs) * g_fps / 1e9);
+	const std::int64_t now = nowNs();
+	const auto due = static_cast<std::int64_t>(static_cast<double>(now - g_startNs) * g_fps / 1e9);
 	for (int i = 0; i < kMaxFramesPerLoop && g_framesRun < due; i++) {
 		retro_run();
 		g_framesRun++;
 	}
 	if (g_framesRun < due) g_framesRun = due;
+	if (now - g_lastSaveCheckNs >= kSaveIntervalNs) {
+		g_lastSaveCheckNs = now;
+		flushSave();
+	}
 	if (!g_frameChanged) return 0;
 	g_frameChanged = false;
 	return drawFrame() ? 1 : 0;

@@ -33,8 +33,8 @@
       "organizationName": "org.opengameconsole",
       "applicationName": "opengameconsole",
       "devicePixelRatio": 2,
-      "permissions": ["Audio"],
-      "nativeSources": ["native/nes_host.cpp", "native/nes_host.h", "native/pad_demo_rom.c"],
+      "permissions": ["Audio", "Documents", "Downloads"],
+      "nativeSources": ["native/nes_host.cpp", "native/nes_host.h", "native/rom_library.cpp", "native/rom_library.h", "native/pad_demo_rom.c"],
       "staticLibraries": [
         {
           "name": "fceumm",

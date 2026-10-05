@@ -5,12 +5,14 @@ import { loadCliPlugins } from '@geastack/compiler/dist/plugins/load.js'
 
 const pluginPath = fileURLToPath(new URL('./nes-host-plugin.mjs', import.meta.url))
 
-test('geatsc accepts the nes host plugin and maps the three calls', async () => {
+test('geatsc accepts the nes host plugin and maps the five calls', async () => {
   const plugins = await loadCliPlugins([pluginPath])
   const plugin = plugins.find((item) => item.name === 'opengameconsole-nes-host')
   assert.ok(plugin, 'plugin loaded')
   const { capabilities } = plugin.instantiate(new Map())
   assert.deepEqual([...capabilities.hostFunctions], [
+    ['nesRefreshRoms', 'opengameconsole::nes::refreshRoms'],
+    ['nesRomName', 'opengameconsole::nes::romName'],
     ['nesPlay', 'opengameconsole::nes::play'],
     ['nesSetButton', 'opengameconsole::nes::setButton'],
     ['nesStop', 'opengameconsole::nes::stop'],

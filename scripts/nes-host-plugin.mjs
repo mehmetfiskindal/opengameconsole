@@ -2,6 +2,8 @@ import { noPluginCapabilities } from '@geastack/compiler/plugin'
 
 const preamble = ['#include "nes_host.h"']
 const hostFunctions = [
+  ['nesRefreshRoms', 'opengameconsole::nes::refreshRoms'],
+  ['nesRomName', 'opengameconsole::nes::romName'],
   ['nesPlay', 'opengameconsole::nes::play'],
   ['nesSetButton', 'opengameconsole::nes::setButton'],
   ['nesStop', 'opengameconsole::nes::stop'],

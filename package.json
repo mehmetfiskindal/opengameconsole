@@ -24,6 +24,7 @@
     "id": "opengameconsole",
     "name": "Opengameconsole",
     "entry": "src/index.tsx",
+    "compilerPlugins": ["scripts/nes-host-plugin.mjs"],
     "targets": {
       "web": true,
       "esp32": false,

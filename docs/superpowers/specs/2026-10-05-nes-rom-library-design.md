@@ -26,15 +26,14 @@ Yeni bir native birim eklenir: `native/rom_library.cpp`, `native/rom_library.h`.
 
 ### `rom_library`
 
-Bir giriş üç şeydir: görünen ad, kaynak (gömülü, Belgeler, İndirilenler) ve dosya yolu. Gömülü girişin yolu yoktur.
+Bir dosya girişi dört şeydir: görünen ad, dosya kökü (uzantısız dosya adı), dosya yolu ve klasör (Belgeler, İndirilenler). Pad demo bu birimde yoktur; `nes_host` listenin başına onu kendisi koyar.
 
-- `scan(home)`: `home + "/Documents/NES"` yoksa oluşturmayı dener; oluşturamazsa sessizce geçer. İki klasörü tarar, listeyi döndürür.
-  - İlk giriş her zaman pad demodur, adı “Pad Demo”.
-  - Diğerleri görünen ada göre, büyük/küçük harf farketmeden sıralanır. Ad eşitse Belgeler önce gelir.
-  - Görünen ad uzantısız dosya adıdır. Aynı görünen ad iki kez geçiyorsa İndirilenler’deki girişin adına ` (Downloads)` eklenir.
-  - Okunamayan klasör boş sayılır.
-- `readRom(entry, out)`: gömülü girişte baytları diziden, dosya girişinde dosyadan okur. 4 MiB’dan büyük veya okunamayan dosyada `false` döner.
-- `saveFileName(displayName, bytes)`: `<güvenli-ad>-<crc32>.sav`. Güvenli ad, `A-Z a-z 0-9 . _ -` ve boşluk dışındaki karakterlerin `_` olduğu görünen addır. CRC32 tüm ROM baytları üzerinden, 8 küçük onaltılık hanedir. Böylece iki klasörde aynı adlı iki farklı ROM birbirinin kaydını ezmez.
+- `scan(home)`: `home + "/Documents/NES"` yoksa oluşturmayı dener; oluşturamazsa sessizce geçer. İki klasörü tarar, dosya girişlerini döndürür.
+  - Girişler görünen ada göre, büyük/küçük harf farketmeden sıralanır. Ad eşitse Belgeler önce gelir.
+  - Görünen ad dosya köküdür. Aynı ad (büyük/küçük harf farketmeden) Belgeler’de de varsa İndirilenler’deki girişin adına ` (Downloads)` eklenir.
+  - Okunamayan klasör boş sayılır. `home` boşsa liste boştur.
+- `readRomFile(path, out)`: dosyayı okur. 4 MiB’dan büyük, boş veya okunamayan dosyada `false` döner.
+- `saveFileName(stem, bytes)`: `<güvenli-kök>-<crc32>.sav`. Güvenli kök, ASCII harf, rakam, `. _ -` ve boşluk dışındaki her baytın `_` olduğu dosya köküdür. CRC32 tüm ROM baytları üzerinden, 8 küçük onaltılık hanedir. İki klasörde aynı adlı iki farklı ROM birbirinin kaydını ezmez; aynı ROM’un iki kopyası aynı kaydı paylaşır.
 - `readSave(path, size, out)`: dosya varsa ve boyutu tam `size` ise okur, değilse `false`.
 - `writeSave(path, bytes)`: klasörü yoksa oluşturur, önce `path + ".tmp"` dosyasına yazar, sonra `rename` eder. Yarım kalan yazma eski kaydı bozmaz.
 
@@ -42,8 +41,8 @@ Kayıt klasörü `$HOME/.local/share/org.opengameconsole/opengameconsole/saves`.
 
 ### `nes_host` değişiklikleri
 
-- Liste `nes_host.cpp` içinde tutulur; `refreshRoms()` onu `scan(getenv("HOME"))` ile yeniler.
-- `play(index)` girişin baytlarını `std::vector` içine okur. `persistent_data` true kaldığı için bu vektör oyun kapanana kadar yaşar. `full_path`, `dir`, `name`, `ext` girişin gerçek dosyasından doldurulur.
+- Liste `nes_host.cpp` içinde tutulur; `refreshRoms()` onu “Pad Demo” (kök `pad-demo`, yol yok) ve ardından `scan(getenv("HOME"))` ile yeniler.
+- `play(index)` girişin baytlarını `std::vector` içine okur; pad demoda gömülü diziden kopyalar. `persistent_data` true kaldığı için bu vektör oyun kapanana kadar yaşar. `full_path`, `dir`, `name`, `ext` girişin gerçek dosyasından doldurulur.
 - Oyun yüklendikten sonra `retro_get_memory_size(RETRO_MEMORY_SAVE_RAM)` sıfırdan büyükse kayıt dosyası okunur ve `retro_get_memory_data` alanına kopyalanır.
 - Kayıt üç anda yazılır: `stop()` içinde çekirdek kapanmadan önce, `play()` başka bir oyuna geçmeden önce ve oyun açıkken çizim kancasında 30 saniyede bir. Hepsinde SRAM son yazılan kopyayla karşılaştırılır; aynıysa dosyaya dokunulmaz. Uygulama oyun açıkken öldürülürse en çok son 30 saniye kaybolur.
 
@@ -84,7 +83,7 @@ Oyun ekranı ve tuş bandı değişmez.
   - `.nes` / `.NES` alınır, `.txt` ve alt klasördeki `.nes` alınmaz;
   - sıralama ve ` (Downloads)` eki;
   - `Documents/NES` yoksa oluşturulur;
-  - 4 MiB’dan büyük dosya `readRom` ile reddedilir;
+  - 4 MiB’dan büyük dosya `readRomFile` ile reddedilir;
   - `saveFileName` güvenli ad ve bilinen bir CRC32 değeri üretir;
   - `writeSave` sonrası `readSave` aynı baytları verir, yanlış boyut reddedilir.
 - Bu test Sailfish SDK derleme kabuğunda i486 hedefiyle derlenip çalıştırılır; bir PowerShell betiği bunu tek komuta bağlar.

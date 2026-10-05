@@ -9,6 +9,7 @@
     "check": "tsc --noEmit",
     "test": "node --test \"scripts/**/*.test.mjs\"",
     "rom": "node scripts/nes/write-pad-demo.mjs",
+    "test:native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-native.ps1",
     "sailfish:build": "powershell -NoProfile -ExecutionPolicy Bypass -File node_modules/@geastack/linux/targets/sailfish-os/build-sailfish-os.ps1 -AppDirectory . -Architecture aarch64",
     "sailfish:deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-sailfish.ps1"
   },

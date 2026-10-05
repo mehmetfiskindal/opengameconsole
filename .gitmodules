@@ -1,0 +1,4 @@
+[submodule "vendor/geastack-linux"]
+	path = vendor/geastack-linux
+	url = https://github.com/mehmetfiskindal/linux
+	branch = feat/sailfishos-target-fix

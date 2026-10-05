@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "types": []
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".gea",
+    ".gea-sailfish",
+    "vendor",
+    "vite.config.ts",
+    "vite.web.config.ts"
+  ]
+}

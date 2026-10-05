@@ -932,11 +932,11 @@ Run:
 powershell -NoProfile -ExecutionPolicy Bypass -File node_modules/@geastack/linux/targets/sailfish-os/build-sailfish-os.ps1 -AppDirectory . -Architecture aarch64 -PrepareOnly *> .gea-sailfish/prepare.log
 Select-String -Path .gea-sailfish/prepare.log -Pattern 'gea-nonreactive-list|error'
 $gen = '.gea-sailfish/build/opengameconsole-aarch64/project/generated/index.cpp'
-foreach ($name in 'refreshRoms','romName','play','setButton','stop') { "$name $((Select-String -Path $gen -Pattern "opengameconsole::nes::$name\(").Count)" }
+foreach ($name in 'refreshRoms','romName','play','setButton','stop') { $pattern = 'opengameconsole::nes::' + $name + '\('; $count = (Select-String -Path $gen -Pattern $pattern).Count; "$name $count" }
 Select-String -Path .gea-sailfish/build/opengameconsole-aarch64/project/*.desktop -Pattern 'Permissions='
 ```
 
-Expected: ilk `Select-String` boş. `refreshRoms` ve `romName` en az 1 (alan başlatıcısı ve `refresh`/`back` aynı `loadRoms` gövdesini paylaşabilir), `play` 1, `setButton` 16, `stop` 1. `Permissions=Audio;Documents;Downloads`.
+Expected: ilk `Select-String` yalnızca PowerShell’in stderr sarmalayıcısı olan `NativeCommandError` satırını gösterebilir; başka satır yok. `refreshRoms` ve `romName` en az 1 (alan başlatıcısı ve `refresh`/`back` aynı `loadRoms` gövdesini paylaşabilir), `play` 1, `setButton` 16, `stop` 1. `Permissions=Audio;Documents;Downloads`.
 
 - [ ] **Step 6: aarch64 RPM**
 
